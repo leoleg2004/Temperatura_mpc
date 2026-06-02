@@ -23,17 +23,31 @@ disp('Ricerca dell''Operating Point ed estrazione delle matrici da Simulink...')
 mdl = 'Stanza';
 load_system(mdl);
 
-% Creiamo un punto operativo vuoto basato sul modello
-op = operpoint(mdl);
+% Specifica del punto di funzionamento
+opspec = operspec(mdl);
 
-% Forziamo manualmente lo stato al valore di riferimento x_ref (blocco integratore)
-if ~isempty(op.States)
-    op.States(1).x = x_ref;
+% Per trovare l'equilibrio termico perfetto, fissiamo le Temperature (289 K)
+% ma lasciamo LIBERI gli stati dei termosifoni (Q1, Q2, Q3) e gli ingressi (u)
+if ~isempty(opspec.States)
+    opspec.States(1).x = x_ref;
+    % [1;1;1] blocca le T. [0;0;0] lascia liberi i calori Q.
+    opspec.States(1).Known = [1; 1; 1; 0; 0; 0];
 end
 
-% Forziamo manualmente l'ingresso al valore di riferimento u_ref
+if ~isempty(opspec.Inputs)
+    opspec.Inputs(1).u = u_ref;
+    opspec.Inputs(1).Known = zeros(nu, 1); % Ingressi completamente liberi
+end
+
+% Trova il vero punto operativo di equilibrio
+opt = findopOptions('DisplayReport', 'off');
+op = findop(mdl, opspec, opt);
+
+% Aggiorniamo i nostri target x_ref e u_ref con i valori esatti di 
+% equilibrio termodinamico trovati da Simulink (es. ~99W invece di 100W)
+x_ref = op.States(1).x;
 if ~isempty(op.Inputs)
-    op.Inputs(1).u = u_ref;
+    u_ref = op.Inputs(1).u;
 end
 
 % Estrai le matrici Ac e Bc
