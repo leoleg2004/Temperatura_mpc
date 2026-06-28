@@ -1,0 +1,82 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{a4paper, top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+\usepackage{hyperref}
+
+\title{\textbf{Progettazione di un MPC per il Controllo della Temperatura di un Appartamento a Tre Stanze}}
+\author{Leonardo Leggeri}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Il presente documento descrive la progettazione e la simulazione di un controllore predittivo basato su modello (Model Predictive Control, MPC) per la regolazione termica di un appartamento composto da tre stanze interconnesse. Vengono discussi la derivazione del modello matematico, la linearizzazione attorno a un punto operativo di equilibrio, e la sintesi di due formulazioni avanzate dell'MPC: una con costo terminale e set invariante di disuguaglianza, l'altra con vincolo terminale di uguaglianza.
+\end{abstract}
+
+\section{Introduzione}
+Il controllo della temperatura all'interno degli edifici presenta spesso dinamiche accoppiate e multivariabili. L'appartamento in esame \`e composto da tre stanze, ciascuna riscaldata da un termosifone indipendente. Il sistema \`e soggetto a scambi termici non lineari tra gli ambienti adiacenti e a dispersioni termiche verso l'esterno, la cui temperatura \`e assunta costante ($T_{ext} = 278$\,K). L'obiettivo principale \`e progettare un MPC capace di portare le stanze da una temperatura iniziale fredda fino a un target di comfort prestabilito ($289$\,K), garantendo il rigoroso rispetto dei vincoli fisici e operativi.
+
+\section{Modellistica Matematica}
+Il vettore di stato del sistema in tempo continuo \`e composto dalle temperature delle tre stanze e dalle potenze erogate dai rispettivi termosifoni:
+\begin{equation}
+    x(t) = \begin{bmatrix} T_1(t) & T_2(t) & T_3(t) & Q_1(t) & Q_2(t) & Q_3(t) \end{bmatrix}^T
+\end{equation}
+Il vettore degli ingressi di controllo rappresenta i riferimenti di potenza comandati ai termosifoni:
+\begin{equation}
+    u(t) = \begin{bmatrix} Q_{1,r}(t) & Q_{2,r}(t) & Q_{3,r}(t) \end{bmatrix}^T
+\end{equation}
+
+La dinamica termica \`e descritta dalle seguenti equazioni differenziali:
+\begin{align}
+    C_1 \dot{T}_1 &= Q_1 - k_{1,2}(T_1 - T_2) - k_{1,3}(T_1 - T_3) - k_{ext}(T_1 - T_{ext}) \\
+    C_2 \dot{T}_2 &= Q_2 + k_{1,2}(T_1 - T_2) - k_{2,3}(T_2 - T_3) - k_{ext}(T_2 - T_{ext}) \\
+    C_3 \dot{T}_3 &= Q_3 + k_{1,3}(T_1 - T_3) + k_{2,3}(T_2 - T_3) - k_{ext}(T_3 - T_{ext})
+\end{align}
+dove $C_i$ rappresenta la capacit\`a termica dell'ambiente, e $k_{ext} = 9$\,W/K indica il fattore di dispersione verso l'esterno.
+
+\subsection{Non-linearit\`a del Sistema}
+Il sistema \`e fortemente non lineare a causa della dipendenza dei coefficienti di scambio termico $k_{i,j}$ dalle differenze di temperatura tra le stanze:
+\begin{equation}
+    k_{i,j}(t) = \bar{k}_{i,j} + \frac{4}{1 + e^{-0.5 |T_i(t) - Tj(t)|}}
+\end{equation}
+Le dinamiche degli attuatori (i termosifoni) seguono sistemi del primo ordine con costanti di tempo $\tau_i$:
+\begin{equation}
+    \dot{Q}_i = \frac{Q_{i,r} - Q_i}{\tau_i}
+\end{equation}
+
+\section{Linearizzazione e Discretizzazione}
+Data l'impossibilit\`a di formulare un MPC lineare standard (QP) direttamente sulle equazioni continue, il sistema \`e stato inizialmente modellato in ambiente Simulink. \`E stata sfruttata la funzione \texttt{findop} per individuare l'esatto punto di equilibrio (Operating Point) termodinamico corrispondente alle temperature target. 
+
+Attorno a tale equilibrio reale, il modello \`e stato linearizzato (ottenendo le matrici $A_c, B_c$) e successivamente discretizzato con un tempo di campionamento $T_s = 120$\,s, adatto per la cattura della dinamica lenta del sistema (sistema a matrici $A_d, B_d$).
+
+\section{Progettazione del Controllore MPC}
+L'architettura del controllore MPC \`e stata strutturata per risolvere un problema di programmazione quadratica (QP) ad ogni istante di campionamento. I vincoli stringenti imposti sul sistema sono i seguenti:
+\begin{itemize}
+    \item \textbf{Limiti attuatori:} La potenza termica \`e non negativa e saturata a 150\,W ($0 \le u_i \le 150$).
+    \item \textbf{Limiti di stato:} La temperatura nelle stanze non deve mai scendere al di sotto della soglia critica di 282.5\,K.
+\end{itemize}
+
+\subsection{Formulazione 1: Set Invariante e Costo Terminale}
+Nel primo approccio, la stabilit\`a in anello chiuso \`e garantita dall'utilizzo di due fondamentali ingredienti terminali:
+\begin{enumerate}
+    \item L'inserimento del costo infinito di Lyapunov (Matrice $P$, estratta come soluzione dell'Equazione Algebrica di Riccati).
+    \item L'imposizione di un vincolo terminale di disuguaglianza rappresentato dal \textit{Control Invariant Set} ($\mathcal{O}_\infty$).
+\end{enumerate}
+Questa formulazione \`e computazionalmente molto efficiente e permette di raggiungere la stabilit\`a asintotica pur mantenendo un orizzonte predittivo $N$ estremamente breve (es. $N=4$ o $N=6$).
+
+\subsection{Formulazione 2: Vincolo Terminale di Uguaglianza}
+Nel secondo approccio, esplorato a scopi di confronto accademico, il vincolo sul Control Invariant Set e il costo terminale vengono rimossi. Al loro posto, si introduce un rigido vincolo di uguaglianza per forzare lo stato predetto all'istante $N$ ad atterrare esattamente sul riferimento ($x_N = x_{ref}$).
+Tuttavia, come evidenziato in simulazione, essendo il sistema termico caratterizzato da grande inerzia (e capacit\`a limitata degli attuatori), imporre al sistema di raggiungere l'equilibrio in soli 6 passi risulta fisicamente infattibile, e l'ottimizzatore va in stato di \textit{Infeasible}. Per garantire il successo di questa formulazione \`e necessario ampliare drammaticamente l'orizzonte predittivo (es. $N=100$), a scapito di un notevole incremento del carico computazionale.
+
+\section{Conclusioni e Simulazioni}
+Entrambe le formulazioni garantiscono il rigoroso rispetto dei vincoli fisici e riescono ad accompagnare la temperatura da un ambiente freddo ($284$\,K) al riferimento desiderato di comfort senza violare la soglia di sicurezza. In ambiente di calcolo sono stati predisposti efficaci plot in 3D sia del Control Invariant Set (e i suoi precursori N-step) sia dell'evoluzione parabolica del Funzionale di Costo di Lyapunov $J^*(x_k)$, a conferma formale delle corrette metriche di minimizzazione implementate e calcolate istante per istante dalla funzione \texttt{quadprog}.
+
+\end{document}

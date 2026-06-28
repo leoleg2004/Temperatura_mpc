@@ -1,4 +1,4 @@
-function [Fx, fx, Fu, fu, dU_min, dU_max, Gx, gx] = imposta_vincoli(X_min, X_max, U_min, U_max, Rate_max, Ts)
+function [Fx, fx, Fu, fu, dU_min, dU_max, Gx, gx] = imposta_vincoli(X_min, X_max, U_min, U_max, Ts)
     % IMPOSTA_VINCOLI Costruisce le matrici poliedriche dei vincoli per l'MPC.
     % È una funzione generalizzata per qualsiasi sistema.
     %
@@ -18,8 +18,8 @@ function [Fx, fx, Fu, fu, dU_min, dU_max, Gx, gx] = imposta_vincoli(X_min, X_max
     nu = length(U_min);
 
     % Vincoli di Rateo
-    dU_max = Rate_max * Ts; 
-    dU_min = -dU_max;
+    dU_max = U_max; 
+    dU_min = U_min;
 
     % Vincoli Poliedrici di Stato
     Fx = [eye(nx); -eye(nx)]; 
