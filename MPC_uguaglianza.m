@@ -4,7 +4,10 @@
 % =========================================================================
 
 % Inizializzazione Path
-startup_project();
+[project_dir, ~, ~] = fileparts(mfilename('fullpath'));
+addpath(genpath(project_dir));
+cd(project_dir);
+disp('Path e cartella di lavoro inizializzati in automatico!');
 
 %% 1. Definizione del Sistema (TEMPO CONTINUO)
 nx = 6; % Stati: [T1, T2, T3, Q1, Q2, Q3]'
@@ -43,9 +46,14 @@ Bc = sys_c.B;
 disp('Conversione del modello da Continuo a Discreto...');
 [Ad, Bd] = discretizza_modello(Ac, Bc, nx, nu, Ts);
 
+% -------------------------------------------------------------------------
+% VERIFICA PROPRIETA' STRUTTURALI (Raggiungibilità e Osservabilità)
+% -------------------------------------------------------------------------
+run('Analisi_di_Sistema/verifica_raggiungibilita.m');
+
 %% 2. Progetto Pesi Q e R
-disp('Progetto LQR per estrarre i pesi Q e R (ignorando P per ora)...');
-[~, ~, Q, R, ~] = progetta_LQR_discreto(Ad, Bd);
+disp('Progetto LQR per estrarre i pesi Q e R (e matrice A_cl per Lyapunov)...');
+[~, P, Q, R, A_cl] = progetta_LQR_discreto(Ad, Bd);
 
 %% 3. Vincoli Fisici (Ampiezza e Rateo)
 disp('Impostazione dei vincoli fisici (Ampiezza e Rateo)...');
@@ -78,6 +86,10 @@ disp('Ottimizzazione Riuscita!');
 
 %% 7. Grafici 
 plot_risultati(t_sim, storia_x, storia_u, U_min, U_max, x_ref, u_ref, Ts);
+
+% Plot del Ritratto di Fase e della Funzione di Lyapunov (Partenza Reale)
+disp('Generazione plot del Ritratto di Fase e Funzione di Lyapunov...');
+plot_lyapunov_discrete(P, A_cl, Ts, x_iniziale, x_ref);
 
 %% 9. Plot Funzionale di Costo 3D
 disp('Generazione plot del Funzionale di Costo 3D...');

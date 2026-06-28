@@ -65,6 +65,11 @@ f_eq = dinamica_casa(x_ref, u_ref);
 disp('Conversione del modello da Continuo a Discreto...');
 [Ad, Bd] = discretizza_modello(Ac, Bc, nx, nu, Ts);
 
+% -------------------------------------------------------------------------
+% VERIFICA PROPRIETA' STRUTTURALI (Raggiungibilità e Osservabilità)
+% -------------------------------------------------------------------------
+run('Analisi_di_Sistema/verifica_raggiungibilita.m');
+
 %% 2. Progetto LQR tramite funzione dedicata
 % =========================================================================
 % NOTA SUI PESI Q e R:
@@ -80,7 +85,6 @@ disp('Impostazione dei vincoli fisici (Ampiezza e Rateo)...');
 U_min = [0; 0; 0];  
 U_max = [150; 150; 150]; 
 
-
 % Stati: T1(K), T2(K), T3(K), Q1(W), Q2(W), Q3(W)
 X_min = [282.5; 282.5; 282.5; 0; 0; 0];
 X_max = [320; 320; 320; 150; 150; 150]; 
@@ -93,8 +97,6 @@ X_max = [320; 320; 320; 150; 150; 150];
 %% 4. Calcolo Control Invariant Set e Plot
 disp('--- CALCOLO del Control Invariant Set ---');
 [G_inf, g_inf] = cis(Ad, Bd, x_ref, u_ref, Fx, fx, Fu, fu, Q, R);
-
-
 
 %% 5. Setup Problema MPC 
 N = 6; % Orizzonte predittivo 
@@ -109,20 +111,10 @@ x_iniziale = [284;  % T1
               0;    % Q1
               10;   % Q2
               0];   % Q3
-t_sim = 150; % ATTENZIONE: Questo è il numero di PUNTI plottati (passi simulati reali), NON confonderlo con i passi predittivi N!
+t_sim = 60; 
 
 [storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t_sim, Ad, Bd, dU_max, x_ref, u_ref);
-disp('Ottimizzazione Riuscita. Il modello è matematicamente solido.');
-
-disp('---------------------------------------------------');
-disp('VERIFICA RAGGIUNGIMENTO TARGET (Ultimo Step)');
-disp('Stato Finale Raggiunto (storia_x(:,end)):');
-disp(storia_x(:,end));
-disp('Target Desiderato (x_ref):');
-disp(x_ref);
-disp('Errore Assoluto [T1; T2; T3; Q1; Q2; Q3]:');
-disp(abs(storia_x(:,end) - x_ref));
-disp('---------------------------------------------------');
+disp('Ottimizzazione Riuscita!');
 
 %% 7. Grafici 
 % Disegna il Control Invariant Set in 3D con il punto di arrivo reale
@@ -131,9 +123,9 @@ plot_cis(G_inf, g_inf, x_ref, storia_x);
 % Plot nel dominio del tempo
 plot_risultati(t_sim, storia_x, storia_u, U_min, U_max, x_ref, u_ref, Ts);
 
-
-% L'utente ha chiesto di non visualizzare più la funzione di Lyapunov.
-% plot_lyapunov_discrete(P,A_cl,Ts);
+% Plot del Ritratto di Fase e della Funzione di Lyapunov (Partenza Reale)
+disp('Generazione plot del Ritratto di Fase e Funzione di Lyapunov...');
+plot_lyapunov_discrete(P, A_cl, Ts, x_iniziale, x_ref);
 
 %% 9. Plot Funzionale di Costo 3D
 disp('Generazione plot del Funzionale di Costo 3D...');
