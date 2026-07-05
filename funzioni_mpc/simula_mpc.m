@@ -1,5 +1,9 @@
-function [storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t_sim, Ad, Bd, dU_max, x_ref, u_ref)
+function [storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t_sim, Ad, Bd, dU_max, x_ref, u_ref, fig_suffix)
     % SIMULA_MPC Risolve il problema quadratico e simula l'evoluzione del sistema
+    
+    if nargin < 9
+        fig_suffix = '';
+    end
     
     % Offset affine per far sì che x_ref sia un vero punto di equilibrio
     c_affine = x_ref - Ad*x_ref - Bd*u_ref;
@@ -58,11 +62,12 @@ function [storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t
     end
     
     % Plot della traiettoria completa tutto in una volta alla fine
-    figure('Name', 'Traiettoria 3D MPC (Temperature)', 'Color', 'w'); hold on; grid on; view(3);
+    fig_name = ['Traiettoria 3D MPC (Temperature) ', fig_suffix];
+    figure('Name', strtrim(fig_name), 'Color', 'w'); hold on; grid on; view(3);
     xlabel('T_1 [K]', 'Interpreter', 'latex'); 
     ylabel('T_2 [K]', 'Interpreter', 'latex'); 
     zlabel('T_3 [K]', 'Interpreter', 'latex');
-    title('Evoluzione Traiettoria Temperature MPC', 'Interpreter', 'latex');
+    title(['Evoluzione Traiettoria Temperature MPC ', fig_suffix], 'Interpreter', 'latex');
     
     plot3(storia_x(1,:), storia_x(2,:), storia_x(3,:), '-b', 'LineWidth', 2.5, 'DisplayName', 'Traiettoria Effettiva');
     

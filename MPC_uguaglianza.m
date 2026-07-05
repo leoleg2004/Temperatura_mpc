@@ -71,7 +71,7 @@ X_max = [350; 350; 350; 150; 150; 150];
 % target in ESATTAMENTE N passi. Se N è piccolo (es. 6), per un sistema termico 
 % lento è FISICAMENTE IMPOSSIBILE e quadprog restituirà INFEASIBLE.
 % Per questo motivo, con l'uguaglianza è quasi obbligatorio usare un N molto grande!
-N = 100; %devo mettere olti piu passi per aggiungere il punot di equilibrio
+N = 15; %devo mettere olti piu passi per aggiungere il punot di equilibrio
 disp(['Setup MPC con Vincolo Terminale di Uguaglianza (x_N = x_ref) con N = ', num2str(N)]);
 
 mpc_prob = setup_mpc_uguaglianza(N, nx, nu, Ad, Bd, Q, R, U_min, U_max, Gx, gx, x_ref, u_ref);
@@ -81,11 +81,11 @@ disp('--- Avvio Ottimizzazione e Simulazione MPC ---');
 x_iniziale = [284; 285; 284; 0; 10; 0];   
 t_sim = 150; 
 
-[storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t_sim, Ad, Bd, dU_max, x_ref, u_ref);
+[storia_x_eq, storia_u_eq, storia_costo_eq] = simula_mpc(mpc_prob, x_iniziale, t_sim, Ad, Bd, dU_max, x_ref, u_ref, '(Uguaglianza)');
 disp('Ottimizzazione Riuscita!');
 
 %% 7. Grafici 
-plot_risultati(t_sim, storia_x, storia_u, U_min, U_max, x_ref, u_ref, Ts);
+plot_risultati(t_sim, storia_x_eq, storia_u_eq, U_min, U_max, x_ref, u_ref, Ts);
 
 % Plot del Ritratto di Fase e della Funzione di Lyapunov (Partenza Reale)
 disp('Generazione plot del Ritratto di Fase e Funzione di Lyapunov...');
@@ -93,7 +93,7 @@ plot_lyapunov_discrete(P, A_cl, Ts, x_iniziale, x_ref);
 
 %% 9. Plot Funzionale di Costo 3D
 disp('Generazione plot del Funzionale di Costo 3D...');
-plot_mpc_cost_3d(mpc_prob, Ad, dU_max, storia_x, storia_costo, Ts);
+plot_mpc_cost_3d(mpc_prob, Ad, dU_max, storia_x_eq, storia_costo_eq, Ts);
 
 disp('NOTA SUL CONTROLLABLE SET:');
 disp('Con il vincolo terminale di uguaglianza, il set invariante O_inf è un SINGOLO PUNTO (x_ref).');

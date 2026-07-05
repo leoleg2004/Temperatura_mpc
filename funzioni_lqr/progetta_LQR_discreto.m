@@ -17,8 +17,8 @@ function [K, P, Q, R, A_cl] = progetta_LQR_discreto(A, B)
     R = diag([1/max_Qr^2, 1/max_Qr^2, 1/max_Qr^2]);
     
     % Fattori di tuning
-    rho_q = 100; 
-    rho_r = 1; 
+    rho_q = 1; 
+    rho_r = 100; 
     
     Q = rho_q * Q;
     R = rho_r * R;
