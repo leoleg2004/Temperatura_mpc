@@ -55,7 +55,7 @@ end
 
 fprintf('\n*******************************************************\n');
 if convergenza_N > 0
-    fprintf('BINGO! Il Controllable Set ha smesso di crescere a N = %d!\n', convergenza_N);
+    fprintf('Il Controllable Set ha smesso di crescere a N = %d!\n', convergenza_N);
     fprintf('A N = %d, il poliedro ha "sbattuto" contro i vincoli termici.\n', convergenza_N);
 else
     fprintf('Il poliedro continua a crescere fino a N = %d.\n', N_max);
