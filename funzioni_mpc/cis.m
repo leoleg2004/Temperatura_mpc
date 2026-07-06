@@ -18,10 +18,14 @@ function [G_inf, g_inf] = cis(A, B, x_ref, u_ref, Fx, fx, Fu, fu, Q, R)
     for i = 1:max_iter
         G_next = G * (A_cl^i);
         if norm(G_next, inf) < tol
+            fprintf('CIS convergente! L''algoritmo ha trovato O_inf in %d iterazioni.\n', i);
             break;
         end
         G_inf = [G_inf; G_next];
         g_inf = [g_inf; g];
+        if i == max_iter
+            fprintf('Attenzione: il calcolo del CIS non è arrivato a convergenza esatta dopo %d iterazioni.\n', max_iter);
+        end
     end
     
     % Ritraslazione di g_inf in modo che G_inf * x <= g_inf 

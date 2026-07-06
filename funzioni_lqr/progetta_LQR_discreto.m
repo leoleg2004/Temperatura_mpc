@@ -18,7 +18,7 @@ function [K, P, Q, R, A_cl] = progetta_LQR_discreto(A, B)
     
     % Fattori di tuning
     rho_q = 1; 
-    rho_r = 100; 
+    rho_r = 1; 
     
     Q = rho_q * Q;
     R = rho_r * R;

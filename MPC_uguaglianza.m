@@ -98,3 +98,28 @@ plot_mpc_cost_3d(mpc_prob, Ad, dU_max, storia_x_eq, storia_costo_eq, Ts);
 disp('NOTA SUL CONTROLLABLE SET:');
 disp('Con il vincolo terminale di uguaglianza, il set invariante O_inf è un SINGOLO PUNTO (x_ref).');
 disp('Il Controllable set N-Step è estremamente difficile da plottare con N=100 e si omette in questa formulazione.');
+
+%% 11. Calcolo dei passi necessari per la convergenza
+tolleranza = 0.05; % Tolleranza di 0.05 Kelvin rispetto al target
+passo_convergenza = -1;
+
+for t = 1:size(storia_x_eq, 2)
+    % Controlliamo se da questo passo in poi l'errore di TUTTE le stanze resta sotto la tolleranza
+    errore_futuro_max = max(max(abs(storia_x_eq(1:3, t:end) - x_ref(1:3))));
+    
+    if errore_futuro_max <= tolleranza
+        passo_convergenza = t - 1; % -1 perché t=1 rappresenta l'istante 0
+        break;
+    end
+end
+
+fprintf('\n======================================================\n');
+if passo_convergenza >= 0
+    fprintf('CONVERGENZA RAGGIUNTA (Tolleranza %.2f K)\n', tolleranza);
+    fprintf('Passi necessari dall''MPC Uguaglianza: %d passi\n', passo_convergenza);
+    fprintf('Tempo fisico di assestamento: %.1f minuti\n', (passo_convergenza * Ts)/60);
+else
+    disp('Convergenza NON raggiunta entro la fine della simulazione!');
+    disp('Prova ad aumentare t_sim per dare più tempo al sistema.');
+end
+fprintf('======================================================\n');

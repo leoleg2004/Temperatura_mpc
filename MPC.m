@@ -99,7 +99,7 @@ disp('--- CALCOLO del Control Invariant Set ---');
 [G_inf, g_inf] = cis(Ad, Bd, x_ref, u_ref, Fx, fx, Fu, fu, Q, R);
 
 %% 5. Setup Problema MPC 
-N = 15; % Orizzonte predittivo 
+N = 20; % Orizzonte predittivo 
 mpc_prob = setup_mpc(N, nx, nu, Ad, Bd, Q, P, R, U_min, U_max, Gx, gx, G_inf, g_inf, x_ref, u_ref);
 
 %% 6. Simulazione MPC Completa 
@@ -111,7 +111,7 @@ x_iniziale = [284;  % T1
               0;    % Q1
               10;   % Q2
               0];   % Q3
-t_sim = 60; 
+t_sim = 120; 
 
 [storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t_sim, Ad, Bd, dU_max, x_ref, u_ref);
 disp('Ottimizzazione Riuscita!');
@@ -196,3 +196,27 @@ if exist('Polyhedron', 'class') == 8
 else
     disp('ATTENZIONE: Il toolbox MPT3 non è installato in questo MATLAB. Impossibile calcolare il Controllable Set in N-Step. Per visualizzarlo, scarica e installa MPT3 (https://www.mpt3.org).');
 end
+%% 11. Calcolo dei passi necessari per la convergenza
+tolleranza = 0.05; % Tolleranza di 0.05 Kelvin rispetto al target
+passo_convergenza = -1;
+
+for t = 1:size(storia_x, 2)
+    % Controlliamo se da questo passo in poi l'errore di TUTTE le stanze resta sotto la tolleranza
+    errore_futuro_max = max(max(abs(storia_x(1:3, t:end) - x_ref(1:3))));
+    
+    if errore_futuro_max <= tolleranza
+        passo_convergenza = t - 1; % -1 perché t=1 rappresenta l'istante 0
+        break;
+    end
+end
+
+fprintf('\n======================================================\n');
+if passo_convergenza >= 0
+    fprintf('CONVERGENZA RAGGIUNTA (Tolleranza %.2f K)\n', tolleranza);
+    fprintf('Passi necessari dall''MPC: %d passi\n', passo_convergenza);
+    fprintf('Tempo fisico di assestamento: %.1f minuti\n', (passo_convergenza * Ts)/60);
+else
+    disp('Convergenza NON raggiunta entro la fine della simulazione!');
+    disp('Prova ad aumentare t_sim per dare più tempo al sistema.');
+end
+fprintf('======================================================\n');
