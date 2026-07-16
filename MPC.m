@@ -99,7 +99,7 @@ disp('--- CALCOLO del Control Invariant Set ---');
 [G_inf, g_inf] = cis(Ad, Bd, x_ref, u_ref, Fx, fx, Fu, fu, Q, R);
 
 %% 5. Setup Problema MPC 
-N = 20; % Orizzonte predittivo 
+N = 10; % Orizzonte predittivo 
 mpc_prob = setup_mpc(N, nx, nu, Ad, Bd, Q, P, R, U_min, U_max, Gx, gx, G_inf, g_inf, x_ref, u_ref);
 
 %% 6. Simulazione MPC Completa 
