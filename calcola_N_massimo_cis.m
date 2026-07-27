@@ -55,9 +55,10 @@ end
 
 fprintf('\n*******************************************************\n');
 if convergenza_N > 0
-    fprintf('Il Controllable Set ha smesso di crescere a N = %d!\n', convergenza_N);
-    fprintf('A N = %d, il poliedro ha "sbattuto" contro i vincoli termici.\n', convergenza_N);
-else
+    fprintf('BINGO! Il Controllable Set ha smesso di crescere a N = %d!\n', convergenza_N);
+    fprintf('A N = %d, il poliedro ha raggiunto la sua dimensione massima assoluta.\n', convergenza_N);
+    fprintf('*******************************************************\n\n');
+   
     fprintf('Il poliedro continua a crescere fino a N = %d.\n', N_max);
+    fprintf('*******************************************************\n');
 end
-fprintf('*******************************************************\n');

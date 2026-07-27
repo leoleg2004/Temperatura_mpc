@@ -12,9 +12,8 @@ function plot_lyapunov_discrete(P_ds, A_cl_ds, Ts, x_iniziale, x_ref)
     % Lavoriamo con gli errori (delta) rispetto al riferimento
     x0_delta = x_iniziale - x_ref;
     
-    % Aggiungiamo anche un paio di altre condizioni iniziali per far 
-    % vedere bene le curve (come in F16), più la tua vera partenza.
-    x0_mult = [x0_delta, [-5; 3; 0; 0; 0; 0], [4; -6; 0; 0; 0; 0]];
+    % Usiamo SOLO la vera condizione di partenza del sistema
+    x0_mult = x0_delta;
     
     set(0,'DefaultLineLineWidth',1.5);
     set(0,'DefaultAxesFontSize',14);
@@ -45,13 +44,13 @@ function plot_lyapunov_discrete(P_ds, A_cl_ds, Ts, x_iniziale, x_ref)
     
     % Campo Vettoriale (Normalizzato per non avere frecce giganti)
     L = sqrt(dT1.^2 + dT2.^2) + 1e-6;
-    h_quiv = quiver(T1_grid, T2_grid, dT1./L, dT2./L, 0.5, 'Color', [0.6 0.6 0.6]);
+    h_quiv = quiver(T1_grid + x_ref(1), T2_grid + x_ref(2), dT1./L, dT2./L, 0.5, 'Color', [0.6 0.6 0.6]);
     
     % Curve di Livello (Spaziatura Logaritmica)
     val_min = min(V_contour(:));
     val_max = max(V_contour(:));
     livelli_log = logspace(log10(val_min + 1e-1), log10(val_max), 20);
-    [~, h_cont] = contour(T1_grid, T2_grid, V_contour, livelli_log, 'LineWidth', 1.2, 'LineColor', [0.2 0.5 0.8]);
+    [~, h_cont] = contour(T1_grid + x_ref(1), T2_grid + x_ref(2), V_contour, livelli_log, 'LineWidth', 1.2, 'LineColor', [0.2 0.5 0.8]);
     
     % Simulazione e Plot delle Traiettorie 2D
     N_steps = 150;
@@ -64,20 +63,20 @@ function plot_lyapunov_discrete(P_ds, A_cl_ds, Ts, x_iniziale, x_ref)
             x_traj(:, k+1) = A_cl_ds * x_traj(:, k);
         end
         if i == 1
-            h_traj = plot(x_traj(1,:), x_traj(2,:), '-', 'Color', colori(i,:), 'LineWidth', 2.5);
-            h_start = plot(x_traj(1,1), x_traj(2,1), '*', 'Color', colori(i,:), 'MarkerSize', 10, 'LineWidth', 2);
+            h_traj = plot(x_traj(1,:) + x_ref(1), x_traj(2,:) + x_ref(2), '-', 'Color', colori(i,:), 'LineWidth', 2.5);
+            h_start = plot(x_traj(1,1) + x_ref(1), x_traj(2,1) + x_ref(2), '*', 'Color', colori(i,:), 'MarkerSize', 10, 'LineWidth', 2);
         else
-            plot(x_traj(1,:), x_traj(2,:), '-', 'Color', colori(i,:), 'LineWidth', 2);
-            plot(x_traj(1,1), x_traj(2,1), '*', 'Color', colori(i,:), 'MarkerSize', 8);
+            plot(x_traj(1,:) + x_ref(1), x_traj(2,:) + x_ref(2), '-', 'Color', colori(i,:), 'LineWidth', 2);
+            plot(x_traj(1,1) + x_ref(1), x_traj(2,1) + x_ref(2), '*', 'Color', colori(i,:), 'MarkerSize', 8);
         end
     end
     
-    xlabel('Deviazione $\Delta T_1$ [K]', 'Interpreter', 'latex') 
-    ylabel('Deviazione $\Delta T_2$ [K]', 'Interpreter', 'latex') 
+    xlabel('Temperatura $T_1$ [K]', 'Interpreter', 'latex') 
+    ylabel('Temperatura $T_2$ [K]', 'Interpreter', 'latex') 
     title('\textbf{Ritratto di Fase LQR e Curve di Livello $V(x)$}', 'Interpreter', 'latex')
     
-    xlim([-t_lim, t_lim]); 
-    ylim([-t_lim, t_lim]);
+    xlim([-t_lim, t_lim] + x_ref(1)); 
+    ylim([-t_lim, t_lim] + x_ref(2));
     
     legend([h_traj, h_start, h_quiv, h_cont], ...
            {'Traiettoria (Vera Partenza)', 'Condizione Iniziale', 'Campo Vettoriale', 'Curve $V(x)=cost$'}, ...
@@ -88,7 +87,7 @@ function plot_lyapunov_discrete(P_ds, A_cl_ds, Ts, x_iniziale, x_ref)
     figure('Name', sprintf('Lyapunov 3D Discreto (Ts = %g s)', Ts), 'Color', 'w', 'Position', [150 150 850 650]);
     hold on; grid on;
     
-    h_surf = surf(T1_grid, T2_grid, V_contour, 'EdgeColor', 'none', 'FaceAlpha', 0.65);
+    h_surf = surf(T1_grid + x_ref(1), T2_grid + x_ref(2), V_contour, 'EdgeColor', 'none', 'FaceAlpha', 0.65);
     colormap jet;
     cb = colorbar;
     ylabel(cb, 'Energia $V(x_k)$', 'Interpreter', 'latex', 'FontSize', 12);
@@ -118,28 +117,28 @@ function plot_lyapunov_discrete(P_ds, A_cl_ds, Ts, x_iniziale, x_ref)
         V_smooth = pchip(t_discrete, V_traj, t_fine);
         
         if i == 1
-            h_line = plot3(T1_smooth, T2_smooth, V_smooth, '-', 'Color', colori(i,:), 'LineWidth', 2.5);
+            h_line = plot3(T1_smooth + x_ref(1), T2_smooth + x_ref(2), V_smooth, '-', 'Color', colori(i,:), 'LineWidth', 2.5);
         else
-            plot3(T1_smooth, T2_smooth, V_smooth, '-', 'Color', colori(i,:), 'LineWidth', 2);
+            plot3(T1_smooth + x_ref(1), T2_smooth + x_ref(2), V_smooth, '-', 'Color', colori(i,:), 'LineWidth', 2);
         end
         
         % Punti discreti
-        plot3(x_traj(1,:), x_traj(2,:), V_traj, 'o', 'MarkerEdgeColor', colori(i,:), 'MarkerFaceColor', 'w', 'MarkerSize', 4);
+        plot3(x_traj(1,:) + x_ref(1), x_traj(2,:) + x_ref(2), V_traj, 'o', 'MarkerEdgeColor', colori(i,:), 'MarkerFaceColor', 'w', 'MarkerSize', 4);
               
         if i == 1
-            h_start3 = plot3(x_traj(1,1), x_traj(2,1), V_traj(1), 'o', 'MarkerFaceColor', colori(i,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 8);
+            h_start3 = plot3(x_traj(1,1) + x_ref(1), x_traj(2,1) + x_ref(2), V_traj(1), 'o', 'MarkerFaceColor', colori(i,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 8);
         else
-            plot3(x_traj(1,1), x_traj(2,1), V_traj(1), 'o', 'MarkerFaceColor', colori(i,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 8);
+            plot3(x_traj(1,1) + x_ref(1), x_traj(2,1) + x_ref(2), V_traj(1), 'o', 'MarkerFaceColor', colori(i,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 8);
         end
         
-        plot3(x_traj(1,end), x_traj(2,end), V_traj(end), 's', 'MarkerFaceColor', colori(i,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 8);
+        plot3(x_traj(1,end) + x_ref(1), x_traj(2,end) + x_ref(2), V_traj(end), 's', 'MarkerFaceColor', colori(i,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 8);
     end
     
-    h_end = plot3(0, 0, 0, 'p', 'MarkerFaceColor', 'y', 'MarkerEdgeColor', 'k', 'MarkerSize', 16);
+    h_end = plot3(x_ref(1), x_ref(2), 0, 'p', 'MarkerFaceColor', 'y', 'MarkerEdgeColor', 'k', 'MarkerSize', 16);
     
     title(sprintf('\\textbf{Funzione di Lyapunov $V(x_k)$ (Partenza Reale)}'), 'Interpreter', 'latex', 'FontSize', 16);
-    xlabel('Deviazione $\Delta T_1$ [K]', 'Interpreter', 'latex', 'FontSize', 12);
-    ylabel('Deviazione $\Delta T_2$ [K]', 'Interpreter', 'latex', 'FontSize', 12);
+    xlabel('Temperatura $T_1$ [K]', 'Interpreter', 'latex', 'FontSize', 12);
+    ylabel('Temperatura $T_2$ [K]', 'Interpreter', 'latex', 'FontSize', 12);
     zlabel('Energia $V(x_k) = x_k^T P_d x_k$', 'Interpreter', 'latex', 'FontSize', 12);
     
     legend([h_surf, h_line, h_start3, h_end], ...
@@ -147,7 +146,7 @@ function plot_lyapunov_discrete(P_ds, A_cl_ds, Ts, x_iniziale, x_ref)
            'Interpreter', 'latex', 'FontSize', 12, 'Location', 'northeast');
     
     zlim([0, max(max_v_traj * 1.2, max(V_contour(:)))]); 
-    xlim([-t_lim, t_lim]);
-    ylim([-t_lim, t_lim]);
+    xlim([-t_lim, t_lim] + x_ref(1));
+    ylim([-t_lim, t_lim] + x_ref(2));
     view(-35, 30);
 end

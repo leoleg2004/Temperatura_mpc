@@ -60,13 +60,16 @@ function plot_risultati(t_sim, storia_x, storia_u, U_min, U_max, x_ref, u_ref, T
     subplot(3,3,3); stairs(time_minutes_u, storia_u(1,:), '-g', 'LineWidth', 1.5); hold on;
     yline(U_max(1), 'k--'); yline(U_min(1), 'k--'); yline(u_ref(1), 'r--', 'LineWidth', 1.2); 
     title(' Comando Ottimale Q_{1,r} [W]'); grid on; ylim([U_min(1)-10, U_max(1)+10]); ylabel('Potenza [W]');
+    xlim([0, min(60, time_minutes_u(end))]); % Zoom sui primi 60 minuti per vedere bene i gradini
     legend({'Comando MPC', 'Limiti', '', 'Target'}, 'Location', 'best');
     
     subplot(3,3,6); stairs(time_minutes_u, storia_u(2,:), '-g', 'LineWidth', 1.5); hold on;
     yline(U_max(2), 'k--'); yline(U_min(2), 'k--'); yline(u_ref(2), 'r--', 'LineWidth', 1.2);
     title(' Comando Ottimale Q_{2,r} [W]'); grid on; ylim([U_min(2)-10, U_max(2)+10]); ylabel('Potenza [W]');
+    xlim([0, min(60, time_minutes_u(end))]);
     
     subplot(3,3,9); stairs(time_minutes_u, storia_u(3,:), '-g', 'LineWidth', 1.5); hold on;
     yline(U_max(3), 'k--'); yline(U_min(3), 'k--'); yline(u_ref(3), 'r--', 'LineWidth', 1.2);
     title(' Comando Ottimale Q_{3,r} [W]'); grid on; ylim([U_min(3)-10, U_max(3)+10]); ylabel('Potenza [W]'); xlabel('Tempo [min]');
+    xlim([0, min(60, time_minutes_u(end))]);
 end

@@ -36,13 +36,22 @@ function plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, T
         max_v_traj = 1;
     end
     
+    % ================= SCALATURA DEL COSTO =================
+    % Ripristiniamo la scala lineare come prima, dividendo per 10^4 per avere 
+    % numeri leggibili sull'asse (es. 1, 2, 3 invece di 10000, 20000).
+    fattore_scala = 1e4;
+    V_surf = V_surf / fattore_scala;
+    storia_costo = storia_costo / fattore_scala;
+    max_v_traj = max_v_traj / fattore_scala;
+    
     % --- RISOLUZIONE SCHIACCIAMENTO VISIVO ---
-    % In F16 si usavano pesi falsi (blkdiag(10,10,1,1)) per alzare la conca e 
-    % farla combaciare con l'altezza della traiettoria vera. Qui automatizziamo
-    % questo "stretching" visivo in modo che la conca non appaia schiacciata
-    % a causa dell'energia enorme proveniente dai termosifoni spenti all'inizio.
-    scale_factor = max_v_traj / max(V_surf(:));
-    if scale_factor > 1.1
+    % Calcoliamo l'altezza teorica della superficie esattamente al punto di partenza
+    stato_start = [storia_x(1,1) - x_ref(1); storia_x(2,1) - x_ref(2); 0; 0; 0; 0];
+    V_start_teorico = (stato_start' * P_ds * stato_start) / fattore_scala;
+    
+    % Scaliamo la superficie in modo che "tocchi" perfettamente la linea rossa alla partenza!
+    if V_start_teorico > 0
+        scale_factor = max_v_traj / V_start_teorico;
         V_surf = V_surf * scale_factor;
     end
 
@@ -53,23 +62,19 @@ function plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, T
     h_surf = surf(T1_grid, T2_grid, V_surf, 'EdgeColor', 'none', 'FaceAlpha', 0.65);
     colormap jet;
     cb = colorbar;
-    ylabel(cb, 'Costo Ottimo MPC $J^*(x_k)$', 'Interpreter', 'latex', 'FontSize', 12);
+    ylabel(cb, 'Costo Ottimo MPC $J^*(x_k) \times 10^4$', 'Interpreter', 'latex', 'FontSize', 12);
     
-    % max_v_traj già calcolato sopra per lo stretch
-
     % Traiettoria
     N_steps = length(storia_costo);
     t_discrete = 1:N_steps;
     t_fine = linspace(1, N_steps, N_steps * 10);
     
-    % Utilizziamo direttamente lo storico del costo reale (storia_costo) 
-    % proveniente dai calcoli di quadprog dell'MPC, come in AutomationF16!
-    
     T1_smooth = pchip(t_discrete, storia_x(1,1:N_steps), t_fine);
     T2_smooth = pchip(t_discrete, storia_x(2,1:N_steps), t_fine);
     V_smooth = pchip(t_discrete, storia_costo, t_fine);
     
-    z_offset = max(max(V_surf(:)), max_v_traj) * 0.03;
+    % Riduciamo anche l'offset visivo per non staccare troppo la linea dal fondo
+    z_offset = max(max(V_surf(:)), max_v_traj) * 0.01;
     
     h_line = plot3(T1_smooth, T2_smooth, V_smooth + z_offset*0.5, '-r', 'LineWidth', 2);
     
@@ -89,7 +94,7 @@ function plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, T
     title(sprintf('\\textbf{Funzionale di Costo MPC $J^*(x_k)$ a Tempo Discreto ($T_s = %g$ s)}', Ts), 'Interpreter', 'latex', 'FontSize', 16);
     xlabel('Temperatura $T_1$ [K]', 'Interpreter', 'latex', 'FontSize', 12);
     ylabel('Temperatura $T_2$ [K]', 'Interpreter', 'latex', 'FontSize', 12);
-    zlabel('Costo $J^*(x_k)$', 'Interpreter', 'latex', 'FontSize', 12);
+    zlabel('Costo $J^*(x_k) \times 10^4$', 'Interpreter', 'latex', 'FontSize', 12);
     
     legend([h_surf, h_line, h_start, h_end], ...
            {'Superficie $J^*(x_k)$', 'Evoluzione di Stato', 'Partenza ($k=0$)', 'Arrivo'}, ...
